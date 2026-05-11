@@ -39,44 +39,41 @@ function initScrollObserver() {
   });
 }
 
-// ===== MUSIC =====
+// ===== MUSIC - Opens YouTube in small popup (bypasses iframe restrictions) =====
+let musicWindow = null;
 let isPlaying = false;
-let ytPlayer = null;
-
-// Load YouTube IFrame API
-function loadYT() {
-  const tag = document.createElement('script');
-  tag.src = 'https://www.youtube.com/iframe_api';
-  document.head.appendChild(tag);
-}
-loadYT();
-
-window.onYouTubeIframeAPIReady = function () {
-  ytPlayer = new YT.Player('yt-frame', {
-    videoId: 'cwLRQn61oUY',
-    playerVars: { autoplay: 0, loop: 1, playlist: 'cwLRQn61oUY' },
-    events: {
-      onStateChange: function(e) {
-        if (e.data === YT.PlayerState.PLAYING) {
-          isPlaying = true;
-          document.getElementById('wave').classList.add('playing');
-          document.querySelector('.play-icon').textContent = '⏸';
-        } else {
-          isPlaying = false;
-          document.getElementById('wave').classList.remove('playing');
-          document.querySelector('.play-icon').textContent = '▶';
-        }
-      }
-    }
-  });
-};
 
 function toggleMusic() {
-  if (!ytPlayer) return;
-  if (isPlaying) {
-    ytPlayer.pauseVideo();
+  const wave = document.getElementById('wave');
+  const icon = document.querySelector('.play-icon');
+
+  if (!isPlaying) {
+    const w = 320, h = 180;
+    const left = window.screen.width - w - 20;
+    const top = window.screen.height - h - 80;
+    musicWindow = window.open(
+      'https://www.youtube.com/watch?v=cwLRQn61oUY',
+      'music',
+      `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=no`
+    );
+    isPlaying = true;
+    wave.classList.add('playing');
+    icon.textContent = '⏸';
+
+    const poll = setInterval(() => {
+      if (musicWindow && musicWindow.closed) {
+        isPlaying = false;
+        wave.classList.remove('playing');
+        icon.textContent = '▶';
+        clearInterval(poll);
+      }
+    }, 1000);
+
   } else {
-    ytPlayer.playVideo();
+    if (musicWindow && !musicWindow.closed) musicWindow.close();
+    isPlaying = false;
+    wave.classList.remove('playing');
+    icon.textContent = '▶';
   }
 }
 
